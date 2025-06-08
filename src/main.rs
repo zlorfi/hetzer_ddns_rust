@@ -2,6 +2,7 @@ use std::env;
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use dotenv::dotenv;
+use clap::Parser;
 use dotenv::Error as DotenvError;
 
 #[derive(Deserialize)]
@@ -31,7 +32,18 @@ struct RecordList {
     records: Vec<Record>,
 }
 
+#[derive(Parser, Debug)]
+#[command(name = "hetzner-ddns", version, about = "Dynamic DNS updater for Hetzner")]
+struct Cli {
+    /// Update the AAAA (IPv6) record as well
+    #[arg(long)]
+    ipv6: bool,
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = Cli::parse();
+    let update_ipv6 = args.ipv6;
+
     match dotenv() {
         Ok(_) => {} // .env loaded
         Err(DotenvError::Io(ref e)) if e.kind() == std::io::ErrorKind::NotFound => {
@@ -100,31 +112,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("⚠️  A record not found.");
     }
 
-    // --- IPv6 (AAAA) Record ---
-    if let Some(ip6) = ip6 {
-        if let Some(record6) = records.records.iter().find(|r| r.name == record_name && r.record_type == "AAAA") {
-            if record6.value != ip6 {
-                println!("🔄 Updating AAAA record from {} to {}", record6.value, ip6);
-                let updated6 = Record {
-                    value: ip6.clone(),
-                    ttl: Some(60),
-                    ..record6.to_owned()
-                };
+   // --- IPv6 (AAAA) Record ---
+    if update_ipv6 {
+        if let Some(ip6) = ip6 {
+            if let Some(record6) = records.records.iter().find(|r| r.name == record_name && r.record_type == "AAAA") {
+                if record6.value != ip6 {
+                    println!("🔄 Updating AAAA record from {} to {}", record6.value, ip6);
+                    let updated6 = Record {
+                        value: ip6.clone(),
+                        ttl: Some(60),
+                        ..record6.to_owned()
+                    };
 
-                client.put(format!("https://dns.hetzner.com/api/v1/records/{}", record6.id))
-                    .header("Auth-API-Token", &api_token)
-                    .header("Content-Type", "application/json")
-                    .json(&updated6)
-                    .send()?;
-                println!("✅ AAAA record updated.");
+                    client.put(format!("https://dns.hetzner.com/api/v1/records/{}", record6.id))
+                        .header("Auth-API-Token", &api_token)
+                        .header("Content-Type", "application/json")
+                        .json(&updated6)
+                        .send()?;
+                    println!("✅ AAAA record updated.");
+                } else {
+                    println!("✅ AAAA record already up to date: {}", ip6);
+                }
             } else {
-                println!("✅ AAAA record already up to date: {}", ip6);
+                println!("⚠️  AAAA record not found.");
             }
         } else {
-            println!("⚠️  AAAA record not found.");
+            println!("ℹ️  No public IPv6 address found. Skipping AAAA update.");
         }
     } else {
-        println!("ℹ️  No public IPv6 address found. Skipping AAAA update.");
+        println!("ℹ️  Skipping AAAA update (use --ipv6 to enable).");
     }
 
     Ok(())
