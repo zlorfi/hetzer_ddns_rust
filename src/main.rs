@@ -109,7 +109,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("✅ A record already up to date: {}", ip4);
         }
     } else {
-        println!("⚠️  A record not found.");
+        println!("⚠️ A record not found.");
     }
 
    // --- IPv6 (AAAA) Record ---
@@ -134,13 +134,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("✅ AAAA record already up to date: {}", ip6);
                 }
             } else {
-                println!("⚠️  AAAA record not found.");
+                println!("⚠️ AAAA record not found.");
             }
         } else {
-            println!("ℹ️  No public IPv6 address found. Skipping AAAA update.");
+            println!("ℹ️ No public IPv6 address found. Skipping AAAA update.");
         }
     } else {
-        println!("ℹ️  Skipping AAAA update (use --ipv6 to enable).");
+        println!("ℹ️ Skipping AAAA update (use --ipv6 to enable).");
     }
 
     Ok(())
