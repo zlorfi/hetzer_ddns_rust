@@ -6,5 +6,13 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
 dotenv = "0.15"
-reqwest = { version = "0.12", features = ["json", "blocking", "rustls-tls"] }
+# default-features = false drops native-tls/openssl-sys, so there is no C
+# dependency and the binary cross-compiles to a static musl target cleanly.
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "blocking",
+    "rustls-tls",
+    "charset",
+    "http2",
+] }
 serde = { version = "1.0", features = ["derive"] }
